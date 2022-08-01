@@ -9,6 +9,7 @@ class DecoderLayer(nn.Module):
         d_ff = d_ff or 4*d_model
         self.self_attention = self_attention
         self.cross_attention = cross_attention
+        self.LSTM = nn.LSTM(72, 72, 1)
         self.conv1 = nn.Conv1d(in_channels=d_model, out_channels=d_ff, kernel_size=1)
         self.conv2 = nn.Conv1d(in_channels=d_ff, out_channels=d_model, kernel_size=1)
         self.norm1 = nn.LayerNorm(d_model)
@@ -30,8 +31,10 @@ class DecoderLayer(nn.Module):
         )[0])
 
         y = x = self.norm2(x)
-        y = self.dropout(self.activation(self.conv1(y.transpose(-1,1))))
-        y = self.dropout(self.conv2(y).transpose(-1,1))
+        yLSTM = self.LSTM(y.transpose(-1, 1))
+        y = self.dropout(self.activation(yLSTM[0])).transpose(-1, 1)
+        # y = self.dropout(self.activation(self.conv1(y.transpose(-1,1))))
+        # y = self.dropout(self.conv2(y).transpose(-1,1))
 
         return self.norm3(x+y)
 
