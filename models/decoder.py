@@ -9,7 +9,7 @@ class DecoderLayer(nn.Module):
         d_ff = d_ff or 4*d_model
         self.self_attention = self_attention
         self.cross_attention = cross_attention
-        self.LSTM = nn.LSTM(72, 72, 16)
+        self.LSTM = nn.LSTM(72, 72, 8)
         self.conv1 = nn.Conv1d(in_channels=d_model, out_channels=d_ff, kernel_size=1)
         self.conv2 = nn.Conv1d(in_channels=d_ff, out_channels=d_model, kernel_size=1)
         self.norm1 = nn.LayerNorm(d_model)
