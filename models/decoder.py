@@ -49,16 +49,16 @@ class DecoderLayer(nn.Module):
         hn = torch.zeros(self.num_layers, batch_size, self.hidden_units, device=self.device).requires_grad_()
         cn = torch.zeros(self.num_layers, batch_size, self.hidden_units, device=self.device).requires_grad_()
 
-        yLSTM, (hn, cn) = self.lstm(y.transpose(-1, 1), (hn, cn))
+        y, (hn, cn) = self.lstm(y.transpose(-1, 1), (hn, cn))
         # cn = cn.float().to(self.device)
         # hn = hn.float().to(self.device)
         # yLSTM = yLSTM.float().to(self.device)
 
         # y = self.dropout(self.activation(self.conv1(y.transpose(-1,1))))
         # y = self.dropout(self.conv2(y).transpose(-1,1))
-        final_y = self.conv3(yLSTM).transpose(-1, 1)
+        y = self.conv3(y).transpose(-1, 1)
 
-        return self.norm3(x + final_y)
+        return self.norm3(x + y)
 
 
 class Decoder(nn.Module):
