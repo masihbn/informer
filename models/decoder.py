@@ -2,13 +2,16 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class DecoderLayer(nn.Module):
     def __init__(self, self_attention, cross_attention, d_model, d_ff=None,
-                 dropout=0.1, activation="relu"):
+                 dropout=0.1, activation="relu", device=None):
         super(DecoderLayer, self).__init__()
-        d_ff = d_ff or 4*d_model
+        d_ff = d_ff or 4 * d_model
         self.self_attention = self_attention
         self.cross_attention = cross_attention
+
+        self.device = device
 
         self.num_layers = 32
         self.hidden_units = 25
@@ -46,14 +49,17 @@ class DecoderLayer(nn.Module):
         hn = torch.zeros(self.num_layers, batch_size, self.hidden_units).requires_grad_()
         cn = torch.zeros(self.num_layers, batch_size, self.hidden_units).requires_grad_()
 
-        yLSTM, (hn, cn) = self.lstm(y.transpose(-1,1), (hn, cn))
-
+        yLSTM, (hn, cn) = self.lstm(y.transpose(-1, 1), (hn, cn))
+        cn = cn.float().to(self.device)
+        hn = hn.float().to(self.device)
+        yLSTM = yLSTM.float().to(self.device)
 
         # y = self.dropout(self.activation(self.conv1(y.transpose(-1,1))))
         # y = self.dropout(self.conv2(y).transpose(-1,1))
-        final_y = self.conv3(yLSTM).transpose(-1,1)
+        final_y = self.conv3(yLSTM).transpose(-1, 1)
 
-        return self.norm3(x+y)
+        return self.norm3(x + final_y)
+
 
 class Decoder(nn.Module):
     def __init__(self, layers, norm_layer=None):
