@@ -9,9 +9,19 @@ class DecoderLayer(nn.Module):
         d_ff = d_ff or 4*d_model
         self.self_attention = self_attention
         self.cross_attention = cross_attention
-        self.LSTM = nn.LSTM(72, 72, 1)
-        self.conv1 = nn.Conv1d(in_channels=d_model, out_channels=d_ff, kernel_size=1)
-        self.conv2 = nn.Conv1d(in_channels=d_ff, out_channels=d_model, kernel_size=1)
+
+        self.num_layers = 32
+        self.hidden_units = 25
+        self.lstm = nn.LSTM(
+            input_size=25,
+            hidden_size=self.hidden_units,
+            batch_first=True,
+            num_layers=self.num_layers
+        )
+
+        # self.conv1 = nn.Conv1d(in_channels=d_model, out_channels=d_ff, kernel_size=1)
+        # self.conv2 = nn.Conv1d(in_channels=d_ff, out_channels=d_model, kernel_size=1)
+        self.conv3 = nn.Conv1d(in_channels=512, out_channels=512, kernel_size=1)
         self.norm1 = nn.LayerNorm(d_model)
         self.norm2 = nn.LayerNorm(d_model)
         self.norm3 = nn.LayerNorm(d_model)
@@ -31,10 +41,17 @@ class DecoderLayer(nn.Module):
         )[0])
 
         y = x = self.norm2(x)
-        yLSTM = self.LSTM(y.transpose(-1, 1))
-        y = self.dropout(self.activation(yLSTM[0])).transpose(-1, 1)
+
+        batch_size = y.shape[0]
+        hn = torch.zeros(self.num_layers, batch_size, self.hidden_units).requires_grad_()
+        cn = torch.zeros(self.num_layers, batch_size, self.hidden_units).requires_grad_()
+
+        yLSTM, (hn, cn) = self.lstm(y.transpose(-1,1), (hn, cn))
+
+
         # y = self.dropout(self.activation(self.conv1(y.transpose(-1,1))))
         # y = self.dropout(self.conv2(y).transpose(-1,1))
+        final_y = self.conv3(yLSTM).transpose(-1,1)
 
         return self.norm3(x+y)
 
