@@ -116,7 +116,7 @@ for ii in range(args.itr):
                                                                                                          args.mix,
                                                                                                          args.des, ii)
 
-    exp = Exp(args)  # set experiments
+    exp = Exp(args, k_fold=5)  # set experiments
     print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
     exp.train(setting)
 

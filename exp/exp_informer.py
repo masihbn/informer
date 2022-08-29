@@ -131,6 +131,9 @@ class Exp_Informer(Exp_Basic):
         train_loss_results = []
         validation_loss_results = []
         test_loss_results = []
+        train_loss = None
+        test_loss = None
+        vali_loss = None
 
         max_fold = self.k_fold + 1 if self.k_fold is not None else 2
         for fold in range(1, max_fold):
@@ -191,9 +194,6 @@ class Exp_Informer(Exp_Basic):
 
                 # print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f} Vali Loss: {3:.7f} Test Loss: {4:.7f}".format(
                 #     epoch + 1, train_steps, train_loss, vali_loss, test_loss))
-                train_loss_results.append(train_loss)
-                validation_loss_results.append(vali_loss)
-                test_loss_results.append(test_loss)
 
                 early_stopping(vali_loss, self.model, path)
                 if early_stopping.early_stop:
@@ -201,6 +201,12 @@ class Exp_Informer(Exp_Basic):
                     break
 
                 adjust_learning_rate(model_optim, epoch+1, self.args)
+
+            train_loss_results.append(train_loss)
+            validation_loss_results.append(vali_loss)
+            test_loss_results.append(test_loss)
+
+            print(f'Results for fold: {fold}: Train: {train_loss} Validation: {vali_loss} Test: {test_loss}')
 
             best_model_path = path+'/'+'checkpoint.pth'
             self.model.load_state_dict(torch.load(best_model_path))
