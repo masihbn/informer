@@ -55,7 +55,7 @@ class DecoderLayerLSTM(nn.Module):
 
 class DecoderLayer(nn.Module):
     def __init__(self, self_attention, cross_attention, d_model, d_ff=None,
-                 dropout=0.1, activation="relu"):
+                 dropout=0.1, activation="relu", device=None):
         super(DecoderLayer, self).__init__()
         d_ff = d_ff or 4*d_model
         self.self_attention = self_attention
