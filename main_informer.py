@@ -9,7 +9,7 @@ args = dotdict()
 
 args.model = 'informer'  # model of experiment, options: [informer, informerstack, informerlight(TBD)]
 
-args.data = 'SP500'  # data
+args.data = 'custom'  # data
 args.root_path = './'  # root path of data file
 args.data_path = 'SP500.csv'  # data file
 args.features = 'S'  # forecasting task, options:[M, S, MS]; M:multivariate predict multivariate, S:univariate predict univariate, MS:multivariate predict univariate
@@ -116,7 +116,7 @@ for ii in range(args.itr):
                                                                                                          args.mix,
                                                                                                          args.des, ii)
 
-    exp = Exp(args)  # set experiments
+    exp = Exp(args, k_fold=5)  # set experiments
     print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
     exp.train(setting)
 

@@ -188,7 +188,8 @@ class Dataset_ETT_minute(Dataset):
 class Dataset_Custom(Dataset):
     def __init__(self, root_path, flag='train', size=None, 
                  features='S', data_path='ETTh1.csv', 
-                 target='OT', scale=True, inverse=False, timeenc=0, freq='h', cols=None):
+                 target='OT', scale=True, inverse=False, timeenc=0, freq='h', cols=None,
+                 k_fold=None, fold_number=None):
         # size [seq_len, label_len, pred_len]
         # info
         if size == None:
@@ -213,12 +214,17 @@ class Dataset_Custom(Dataset):
         self.cols=cols
         self.root_path = root_path
         self.data_path = data_path
+        self.k_fold = k_fold
+        self.fold_number = fold_number
         self.__read_data__()
 
     def __read_data__(self):
         self.scaler = StandardScaler()
-        df_raw = pd.read_csv(os.path.join(self.root_path,
+        df_initial_raw = pd.read_csv(os.path.join(self.root_path,
                                           self.data_path))
+        fold_length = int(len(df_initial_raw)/5)
+        fold_start_index = fold_length * (self.fold_number-1)
+        fold_end_index = fold_length * self.fold_number
         '''
         df_raw.columns: ['date', ...(other features), target feature]
         '''
@@ -227,9 +233,10 @@ class Dataset_Custom(Dataset):
             cols=self.cols.copy()
             cols.remove(self.target)
         else:
-            cols = list(df_raw.columns); cols.remove(self.target); cols.remove('date')
-        df_raw = df_raw[['date']+cols+[self.target]]
+            cols = list(df_initial_raw.columns); cols.remove(self.target); cols.remove('date')
+        df_initial_raw = df_initial_raw[['date']+cols+[self.target]]
 
+        df_raw = df_initial_raw[fold_start_index:fold_end_index]
         num_train = int(len(df_raw)*0.7)
         num_test = int(len(df_raw)*0.2)
         num_vali = len(df_raw) - num_train - num_test

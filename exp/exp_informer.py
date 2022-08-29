@@ -18,10 +18,13 @@ import time
 import warnings
 warnings.filterwarnings('ignore')
 
+
 class Exp_Informer(Exp_Basic):
-    def __init__(self, args):
+    def __init__(self, args,
+                 k_fold=None):
         super(Exp_Informer, self).__init__(args)
-    
+        self.k_fold = k_fold
+
     def _build_model(self):
         model_dict = {
             'informer':Informer,
@@ -57,7 +60,7 @@ class Exp_Informer(Exp_Basic):
             model = nn.DataParallel(model, device_ids=self.args.device_ids)
         return model
 
-    def _get_data(self, flag):
+    def _get_data(self, flag, fold_number=None):
         args = self.args
 
         data_dict = {
@@ -90,7 +93,9 @@ class Exp_Informer(Exp_Basic):
             inverse=args.inverse,
             timeenc=timeenc,
             freq=freq,
-            cols=args.cols
+            cols=args.cols,
+            k_fold=self.k_fold,
+            fold_number=fold_number
         )
         print(flag, len(data_set))
         data_loader = DataLoader(
@@ -123,73 +128,90 @@ class Exp_Informer(Exp_Basic):
         return total_loss
 
     def train(self, setting):
-        train_data, train_loader = self._get_data(flag = 'train')
-        vali_data, vali_loader = self._get_data(flag = 'val')
-        test_data, test_loader = self._get_data(flag = 'test')
+        train_loss_results = []
+        validation_loss_results = []
+        test_loss_results = []
 
-        path = os.path.join(self.args.checkpoints, setting)
-        if not os.path.exists(path):
-            os.makedirs(path)
+        for fold in range(2, self.k_fold + 1):
+            train_data, train_loader = self._get_data(flag='train', fold_number=fold)
+            vali_data, vali_loader = self._get_data(flag='val', fold_number=fold)
+            test_data, test_loader = self._get_data(flag='test', fold_number=fold)
 
-        time_now = time.time()
-        
-        train_steps = len(train_loader)
-        early_stopping = EarlyStopping(patience=self.args.patience, verbose=True)
-        
-        model_optim = self._select_optimizer()
-        criterion =  self._select_criterion()
+            path = os.path.join(self.args.checkpoints, setting)
+            if not os.path.exists(path):
+                os.makedirs(path)
 
-        if self.args.use_amp:
-            scaler = torch.cuda.amp.GradScaler()
+            time_now = time.time()
 
-        for epoch in range(self.args.train_epochs):
-            iter_count = 0
-            train_loss = []
-            
-            self.model.train()
-            epoch_time = time.time()
-            for i, (batch_x,batch_y,batch_x_mark,batch_y_mark) in enumerate(train_loader):
-                iter_count += 1
-                
-                model_optim.zero_grad()
-                pred, true = self._process_one_batch(
-                    train_data, batch_x, batch_y, batch_x_mark, batch_y_mark)
-                loss = criterion(pred, true)
-                train_loss.append(loss.item())
-                
-                if (i+1) % 100==0:
-                    print("\titers: {0}, epoch: {1} | loss: {2:.7f}".format(i + 1, epoch + 1, loss.item()))
-                    speed = (time.time()-time_now)/iter_count
-                    left_time = speed*((self.args.train_epochs - epoch)*train_steps - i)
-                    print('\tspeed: {:.4f}s/iter; left time: {:.4f}s'.format(speed, left_time))
-                    iter_count = 0
-                    time_now = time.time()
-                
-                if self.args.use_amp:
-                    scaler.scale(loss).backward()
-                    scaler.step(model_optim)
-                    scaler.update()
-                else:
-                    loss.backward()
-                    model_optim.step()
+            train_steps = len(train_loader)
+            early_stopping = EarlyStopping(patience=self.args.patience, verbose=True)
 
-            print("Epoch: {} cost time: {}".format(epoch+1, time.time()-epoch_time))
-            train_loss = np.average(train_loss)
-            vali_loss = self.vali(vali_data, vali_loader, criterion)
-            test_loss = self.vali(test_data, test_loader, criterion)
+            model_optim = self._select_optimizer()
+            criterion =  self._select_criterion()
 
-            print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f} Vali Loss: {3:.7f} Test Loss: {4:.7f}".format(
-                epoch + 1, train_steps, train_loss, vali_loss, test_loss))
-            early_stopping(vali_loss, self.model, path)
-            if early_stopping.early_stop:
-                print("Early stopping")
-                break
+            if self.args.use_amp:
+                scaler = torch.cuda.amp.GradScaler()
 
-            adjust_learning_rate(model_optim, epoch+1, self.args)
-            
-        best_model_path = path+'/'+'checkpoint.pth'
-        self.model.load_state_dict(torch.load(best_model_path))
-        
+            for epoch in range(self.args.train_epochs):
+                iter_count = 0
+                train_loss = []
+
+                self.model.train()
+                epoch_time = time.time()
+                for i, (batch_x,batch_y,batch_x_mark,batch_y_mark) in enumerate(train_loader):
+                    iter_count += 1
+
+                    model_optim.zero_grad()
+                    pred, true = self._process_one_batch(
+                        train_data, batch_x, batch_y, batch_x_mark, batch_y_mark)
+                    loss = criterion(pred, true)
+                    train_loss.append(loss.item())
+
+                    if (i+1) % 100==0:
+                        # print("\titers: {0}, epoch: {1} | loss: {2:.7f}".format(i + 1, epoch + 1, loss.item()))
+                        speed = (time.time()-time_now)/iter_count
+                        left_time = speed*((self.args.train_epochs - epoch)*train_steps - i)
+                        # print('\tspeed: {:.4f}s/iter; left time: {:.4f}s'.format(speed, left_time))
+                        iter_count = 0
+                        time_now = time.time()
+
+                    if self.args.use_amp:
+                        scaler.scale(loss).backward()
+                        scaler.step(model_optim)
+                        scaler.update()
+                    else:
+                        loss.backward()
+                        model_optim.step()
+
+                # print("Epoch: {} cost time: {}".format(epoch+1, time.time()-epoch_time))
+                train_loss = np.average(train_loss)
+                vali_loss = self.vali(vali_data, vali_loader, criterion)
+                test_loss = self.vali(test_data, test_loader, criterion)
+
+                # print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f} Vali Loss: {3:.7f} Test Loss: {4:.7f}".format(
+                #     epoch + 1, train_steps, train_loss, vali_loss, test_loss))
+                train_loss_results.append(train_loss)
+                validation_loss_results.append(vali_loss)
+                test_loss_results.append(test_loss)
+
+                early_stopping(vali_loss, self.model, path)
+                if early_stopping.early_stop:
+                    # print("Early stopping")
+                    break
+
+                adjust_learning_rate(model_optim, epoch+1, self.args)
+
+            best_model_path = path+'/'+'checkpoint.pth'
+            self.model.load_state_dict(torch.load(best_model_path))
+
+        average_train_loss = sum(train_loss_results) / len(train_loss_results)
+        average_validation_loss = sum(validation_loss_results) / len(validation_loss_results)
+        average_test_loss = sum(test_loss_results) / len(test_loss_results)
+
+        print(f'Average Loss -> Train: {average_train_loss} '
+              f'Validation: {average_validation_loss} '
+              f'Test: {average_test_loss}')
+
         return self.model
 
     def test(self, setting):
@@ -208,10 +230,10 @@ class Exp_Informer(Exp_Basic):
 
         preds = np.array(preds)
         trues = np.array(trues)
-        print('test shape:', preds.shape, trues.shape)
+        # print('test shape:', preds.shape, trues.shape)
         preds = preds.reshape(-1, preds.shape[-2], preds.shape[-1])
         trues = trues.reshape(-1, trues.shape[-2], trues.shape[-1])
-        print('test shape:', preds.shape, trues.shape)
+        # print('test shape:', preds.shape, trues.shape)
 
         # result save
         folder_path = './results/' + setting +'/'
@@ -219,7 +241,7 @@ class Exp_Informer(Exp_Basic):
             os.makedirs(folder_path)
 
         mae, mse, rmse, mape, mspe = metric(preds, trues)
-        print('mse:{}, mae:{}'.format(mse, mae))
+        # print('mse:{}, mae:{}'.format(mse, mae))
 
         np.save(folder_path+'metrics.npy', np.array([mae, mse, rmse, mape, mspe]))
         np.save(folder_path+'pred.npy', preds)
