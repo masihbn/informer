@@ -132,7 +132,8 @@ class Exp_Informer(Exp_Basic):
         validation_loss_results = []
         test_loss_results = []
 
-        for fold in range(2, self.k_fold + 1):
+        max_fold = self.k_fold + 1 if self.k_fold is not None else 1
+        for fold in range(1, max_fold):
             train_data, train_loader = self._get_data(flag='train', fold_number=fold)
             vali_data, vali_loader = self._get_data(flag='val', fold_number=fold)
             test_data, test_loader = self._get_data(flag='test', fold_number=fold)

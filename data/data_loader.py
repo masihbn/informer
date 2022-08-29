@@ -222,9 +222,6 @@ class Dataset_Custom(Dataset):
         self.scaler = StandardScaler()
         df_initial_raw = pd.read_csv(os.path.join(self.root_path,
                                           self.data_path))
-        fold_length = int(len(df_initial_raw)/5)
-        fold_start_index = fold_length * (self.fold_number-1)
-        fold_end_index = fold_length * self.fold_number
         '''
         df_raw.columns: ['date', ...(other features), target feature]
         '''
@@ -236,7 +233,14 @@ class Dataset_Custom(Dataset):
             cols = list(df_initial_raw.columns); cols.remove(self.target); cols.remove('date')
         df_initial_raw = df_initial_raw[['date']+cols+[self.target]]
 
-        df_raw = df_initial_raw[fold_start_index:fold_end_index]
+        if self.k_fold is not None and self.fold_number is not None:
+            fold_length = int(len(df_initial_raw) / 5)
+            fold_start_index = fold_length * (self.fold_number - 1)
+            fold_end_index = fold_length * self.fold_number
+            df_raw = df_initial_raw[fold_start_index:fold_end_index]
+        else:
+            df_raw = df_initial_raw
+
         num_train = int(len(df_raw)*0.7)
         num_test = int(len(df_raw)*0.2)
         num_vali = len(df_raw) - num_train - num_test
