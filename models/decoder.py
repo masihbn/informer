@@ -3,10 +3,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class DecoderLayer(nn.Module):
+class DecoderLayerLSTM(nn.Module):
     def __init__(self, self_attention, cross_attention, d_model, d_ff=None,
                  dropout=0.1, activation="relu", device=None):
-        super(DecoderLayer, self).__init__()
+        super(DecoderLayerLSTM, self).__init__()
         d_ff = d_ff or 4 * d_model
         self.self_attention = self_attention
         self.cross_attention = cross_attention
@@ -22,9 +22,7 @@ class DecoderLayer(nn.Module):
             num_layers=self.num_layers
         )
 
-        # self.conv1 = nn.Conv1d(in_channels=d_model, out_channels=d_ff, kernel_size=1)
-        # self.conv2 = nn.Conv1d(in_channels=d_ff, out_channels=d_model, kernel_size=1)
-        self.conv3 = nn.Conv1d(in_channels=512, out_channels=512, kernel_size=1)
+        self.conv = nn.Conv1d(in_channels=512, out_channels=512, kernel_size=1)
         self.norm1 = nn.LayerNorm(d_model)
         self.norm2 = nn.LayerNorm(d_model)
         self.norm3 = nn.LayerNorm(d_model)
@@ -50,15 +48,43 @@ class DecoderLayer(nn.Module):
         cn = torch.zeros(self.num_layers, batch_size, self.hidden_units, device=self.device).requires_grad_()
 
         y, (hn, cn) = self.lstm(y.transpose(-1, 1), (hn, cn))
-        # cn = cn.float().to(self.device)
-        # hn = hn.float().to(self.device)
-        # yLSTM = yLSTM.float().to(self.device)
-
-        # y = self.dropout(self.activation(self.conv1(y.transpose(-1,1))))
-        # y = self.dropout(self.conv2(y).transpose(-1,1))
-        y = self.conv3(y).transpose(-1, 1)
+        y = self.conv(y).transpose(-1, 1)
 
         return self.norm3(x + y)
+
+
+class DecoderLayer(nn.Module):
+    def __init__(self, self_attention, cross_attention, d_model, d_ff=None,
+                 dropout=0.1, activation="relu"):
+        super(DecoderLayer, self).__init__()
+        d_ff = d_ff or 4*d_model
+        self.self_attention = self_attention
+        self.cross_attention = cross_attention
+        self.conv1 = nn.Conv1d(in_channels=d_model, out_channels=d_ff, kernel_size=1)
+        self.conv2 = nn.Conv1d(in_channels=d_ff, out_channels=d_model, kernel_size=1)
+        self.norm1 = nn.LayerNorm(d_model)
+        self.norm2 = nn.LayerNorm(d_model)
+        self.norm3 = nn.LayerNorm(d_model)
+        self.dropout = nn.Dropout(dropout)
+        self.activation = F.relu if activation == "relu" else F.gelu
+
+    def forward(self, x, cross, x_mask=None, cross_mask=None):
+        x = x + self.dropout(self.self_attention(
+            x, x, x,
+            attn_mask=x_mask
+        )[0])
+        x = self.norm1(x)
+
+        x = x + self.dropout(self.cross_attention(
+            x, cross, cross,
+            attn_mask=cross_mask
+        )[0])
+
+        y = x = self.norm2(x)
+        y = self.dropout(self.activation(self.conv1(y.transpose(-1,1))))
+        y = self.dropout(self.conv2(y).transpose(-1,1))
+
+        return self.norm3(x+y)
 
 
 class Decoder(nn.Module):

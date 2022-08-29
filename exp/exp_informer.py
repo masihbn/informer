@@ -39,6 +39,7 @@ class Exp_Informer(Exp_Basic):
                 self.args.seq_len, 
                 self.args.label_len,
                 self.args.pred_len, 
+                self.args.base_decoder,
                 self.args.factor,
                 self.args.d_model, 
                 self.args.n_heads, 
@@ -53,7 +54,7 @@ class Exp_Informer(Exp_Basic):
                 self.args.output_attention,
                 self.args.distil,
                 self.args.mix,
-                self.device
+                self.device,
             ).float()
         
         if self.args.use_multi_gpu and self.args.use_gpu:
