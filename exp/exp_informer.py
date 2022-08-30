@@ -24,6 +24,7 @@ class Exp_Informer(Exp_Basic):
                  k_fold=None):
         super(Exp_Informer, self).__init__(args)
         self.k_fold = k_fold
+        self.print_log = args.print_log
 
     def _build_model(self):
         model_dict = {
@@ -113,7 +114,8 @@ class Exp_Informer(Exp_Basic):
                 k_fold=self.k_fold,
                 fold_number=fold_number
             )
-        print(flag, len(data_set))
+        if self.print_log:
+            print(flag, len(data_set))
         data_loader = DataLoader(
             data_set,
             batch_size=batch_size,
@@ -222,7 +224,8 @@ class Exp_Informer(Exp_Basic):
             validation_loss_results.append(vali_loss)
             test_loss_results.append(test_loss)
 
-            print(f'Results for fold: {fold}: Train: {train_loss} Validation: {vali_loss} Test: {test_loss}')
+            if self.print_log:
+                print(f'Results for fold: {fold}: Train: {train_loss} Validation: {vali_loss} Test: {test_loss}')
 
             best_model_path = path+'/'+'checkpoint.pth'
             self.model.load_state_dict(torch.load(best_model_path))
@@ -231,9 +234,10 @@ class Exp_Informer(Exp_Basic):
         average_validation_loss = sum(validation_loss_results) / len(validation_loss_results)
         average_test_loss = sum(test_loss_results) / len(test_loss_results)
 
-        print(f'Average Loss -> Train: {average_train_loss} '
-              f'Validation: {average_validation_loss} '
-              f'Test: {average_test_loss}')
+        if self.print_log:
+            print(f'Average Loss -> Train: {average_train_loss} '
+                  f'Validation: {average_validation_loss} '
+                  f'Test: {average_test_loss}')
 
         return self.model
 

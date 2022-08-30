@@ -8,6 +8,7 @@ from informer.utils.tools import dotdict
 args = dotdict()
 
 args.model = 'informer'  # model of experiment, options: [informer, informerstack, informerlight(TBD)]
+args.print_log = False
 
 args.data = 'custom'  # data
 args.root_path = './'  # root path of data file
@@ -119,14 +120,17 @@ for ii in range(args.itr):
                                                                                                          args.des, ii)
 
     exp = Exp(args, k_fold=10)  # set experiments
-    print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
+    if args.print_log:
+        print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
     exp.train(setting)
 
-    print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
+    if args.print_log:
+        print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
     mae, mse, rmse, mape, mspe = exp.test(setting)
 
     if args.do_predict:
-        print('>>>>>>>predicting : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
+        if args.print_log:
+            print('>>>>>>>predicting : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
         exp.predict(setting, True)
 
     torch.cuda.empty_cache()
