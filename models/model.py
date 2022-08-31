@@ -7,7 +7,7 @@ from models.encoder import Encoder, EncoderLayer, ConvLayer, EncoderStack
 from models.decoder import Decoder, DecoderLayer
 from models.attn import FullAttention, ProbAttention, AttentionLayer
 from models.embed import DataEmbedding
-from models.decoder import DecoderLayerLSTM, DecoderLayer
+from models.decoder import DecoderLayerLSTM, DecoderLayer, DecoderLayerGRU
 
 
 class Informer(nn.Module):
@@ -15,11 +15,12 @@ class Informer(nn.Module):
                  factor=5, d_model=512, n_heads=8, e_layers=3, d_layers=2, d_ff=512,
                  dropout=0.0, attn='prob', embed='fixed', freq='h', activation='gelu',
                  output_attention=False, distil=True, mix=True,
-                 device=torch.device('cuda:0')):
+                 device=torch.device('cuda:0'), args=None):
         super(Informer, self).__init__()
         decoder_dict = {
             'default': DecoderLayer,
             'LSTM': DecoderLayerLSTM,
+            'IE-SBiGRU': DecoderLayerGRU,
         }
         self.pred_len = out_len
         self.attn = attn
@@ -50,23 +51,59 @@ class Informer(nn.Module):
             norm_layer=torch.nn.LayerNorm(d_model)
         )
         # Decoder
-        self.decoder = Decoder(
-            [
-                decoder_dict[decoder](
-                    AttentionLayer(Attn(True, factor, attention_dropout=dropout, output_attention=False),
-                                   d_model, n_heads, mix=mix),
-                    AttentionLayer(FullAttention(False, factor, attention_dropout=dropout, output_attention=False),
-                                   d_model, n_heads, mix=False),
-                    d_model,
-                    d_ff,
-                    dropout=dropout,
-                    activation=activation,
-                    device=device
-                )
-                for l in range(d_layers)
-            ],
-            norm_layer=torch.nn.LayerNorm(d_model)
-        )
+        if decoder == 'default':
+            self.decoder = Decoder(
+                [
+                    decoder_dict[decoder](
+                        AttentionLayer(Attn(True, factor, attention_dropout=dropout, output_attention=False),
+                                       d_model, n_heads, mix=mix),
+                        AttentionLayer(FullAttention(False, factor, attention_dropout=dropout, output_attention=False),
+                                       d_model, n_heads, mix=False),
+                        d_model,
+                        d_ff,
+                        dropout=dropout,
+                        activation=activation,
+                        device=device
+                    )
+                    for l in range(d_layers)
+                ],
+                norm_layer=torch.nn.LayerNorm(d_model)
+            )
+        elif decoder == 'LSTM':
+            self.decoder = Decoder(
+                [
+                    decoder_dict[decoder](
+                        AttentionLayer(Attn(True, factor, attention_dropout=dropout, output_attention=False),
+                                       d_model, n_heads, mix=mix),
+                        AttentionLayer(FullAttention(False, factor, attention_dropout=dropout, output_attention=False),
+                                       d_model, n_heads, mix=False),
+                        d_model,
+                        hidden_units=args.LSTM_hidden_units,
+                        input_size=args.LSTM_input_size,
+                        num_layers=args.LSTM_num_layers,
+                        dropout=dropout,
+                        activation=activation,
+                        device=device
+                    )
+                    for l in range(d_layers)
+                ],
+                norm_layer=torch.nn.LayerNorm(d_model)
+            )
+        elif decoder == 'IE-SBiGRU':
+            self.decoder = Decoder(
+                [
+                    decoder_dict[decoder](
+                        args.BiGRU_pred_len,
+                        args.BiGRU_input_size,
+                        args.BiGRU_hidden_size,
+                        args.BiGRU_num_layers,
+                        args.BiGRU_seq_length,
+                        device=device
+                    )
+                    for l in range(d_layers)
+                ],
+                norm_layer=torch.nn.LayerNorm(d_model)
+            )
         # self.end_conv1 = nn.Conv1d(in_channels=label_len+out_len, out_channels=out_len, kernel_size=1, bias=True)
         # self.end_conv2 = nn.Conv1d(in_channels=d_model, out_channels=c_out, kernel_size=1, bias=True)
         self.projection = nn.Linear(d_model, c_out, bias=True)

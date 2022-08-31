@@ -3,20 +3,48 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+class DecoderLayerGRU(nn.Module):
+    def __init__(self, pred_len, input_size, hidden_size,
+                 num_layers, seq_length, device=None):
+        super(DecoderLayerGRU, self).__init__()
+
+        self.pred_len = pred_len
+        self.num_layers = num_layers
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.seq_length = seq_length
+
+        self.gru = nn.GRU(input_size=input_size, hidden_size=hidden_size,
+                          num_layers=num_layers, batch_first=True)
+
+        self.fc = nn.Linear(hidden_size, pred_len)
+
+    def forward(self, x, cross=None, x_mask=None, cross_mask=None):
+        h_0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size)
+
+        # Propagate input through LSTM
+        _, h_out = self.gru(x.transpose(-1, 1), h_0)
+        h_out = h_out.view(-1, self.hidden_size)
+        out = self.fc(h_out)
+
+        return out
+
+
 class DecoderLayerLSTM(nn.Module):
-    def __init__(self, self_attention, cross_attention, d_model, d_ff=None,
+    def __init__(self, self_attention, cross_attention, d_model,
+                 hidden_units, input_size, num_layers,
                  dropout=0.1, activation="relu", device=None):
         super(DecoderLayerLSTM, self).__init__()
-        d_ff = d_ff or 4 * d_model
         self.self_attention = self_attention
         self.cross_attention = cross_attention
 
         self.device = device
 
-        self.num_layers = 32
-        self.hidden_units = 25
+        self.input_size = input_size
+        self.hidden_units = hidden_units
+        self.num_layers = num_layers
         self.lstm = nn.LSTM(
-            input_size=25,
+            input_size=self.input_size,
             hidden_size=self.hidden_units,
             batch_first=True,
             num_layers=self.num_layers

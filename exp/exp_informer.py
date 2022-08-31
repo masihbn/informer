@@ -56,6 +56,7 @@ class Exp_Informer(Exp_Basic):
                 self.args.distil,
                 self.args.mix,
                 self.device,
+                args=self.args
             ).float()
         
         if self.args.use_multi_gpu and self.args.use_gpu:
@@ -179,7 +180,7 @@ class Exp_Informer(Exp_Basic):
                 train_loss = []
 
                 self.model.train()
-                epoch_time = time.time()
+                # epoch_time = time.time()
                 for i, (batch_x,batch_y,batch_x_mark,batch_y_mark) in enumerate(train_loader):
                     iter_count += 1
 
@@ -192,7 +193,7 @@ class Exp_Informer(Exp_Basic):
                     if (i+1) % 100==0:
                         # print("\titers: {0}, epoch: {1} | loss: {2:.7f}".format(i + 1, epoch + 1, loss.item()))
                         speed = (time.time()-time_now)/iter_count
-                        left_time = speed*((self.args.train_epochs - epoch)*train_steps - i)
+                        # left_time = speed*((self.args.train_epochs - epoch)*train_steps - i)
                         # print('\tspeed: {:.4f}s/iter; left time: {:.4f}s'.format(speed, left_time))
                         iter_count = 0
                         time_now = time.time()

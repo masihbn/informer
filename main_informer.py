@@ -8,7 +8,7 @@ from informer.utils.tools import dotdict
 args = dotdict()
 
 args.model = 'informer'  # model of experiment, options: [informer, informerstack, informerlight(TBD)]
-args.print_log = False
+args.print_log = True
 
 args.data = 'custom'  # data
 args.root_path = './'  # root path of data file
@@ -31,8 +31,20 @@ args.label_len = 20  # start token length of Informer decoder
 args.pred_len = 5  # prediction sequence length
 # Informer decoder input: concat[start token series(label_len), zero padding series(pred_len)]
 
-# args.base_decoder = 'default'
-args.base_decoder = 'LSTM'
+args.base_decoder = 'default'
+
+# args.base_decoder = 'LSTM'
+# args.LSTM_hidden_units = 25
+# args.LSTM_num_layers = 32
+# args.LSTM_input_size = 25
+
+# args.base_decoder = 'IE-SBiGRU'
+# args.BiGRU_pred_len = 5
+# args.BiGRU_input_size = 25
+# args.BiGRU_hidden_size = 10
+# args.BiGRU_num_layers = 5
+# args.BiGRU_seq_length = 40
+
 args.enc_in = 1  # encoder input size
 args.dec_in = 1  # decoder input size
 args.c_out = 1  # output size

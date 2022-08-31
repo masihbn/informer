@@ -234,6 +234,7 @@ class Dataset_Custom(Dataset):
         df_initial_raw = df_initial_raw[['date']+cols+[self.target]]
 
         if self.k_fold is not None and self.fold_number is not None:
+            df_initial_raw = df_initial_raw[-365:]
             fold_length = int(len(df_initial_raw) / self.k_fold)
             fold_start_index = fold_length * (self.fold_number - 1)
             fold_end_index = fold_length * self.fold_number
