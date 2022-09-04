@@ -12,7 +12,7 @@ args.print_log = True
 
 args.data = 'custom'  # data
 args.root_path = './'  # root path of data file
-args.data_path = 'SP500.csv'  # data file
+args.data_path = 'SP500 2015.csv'  # data file
 args.features = 'S'  # forecasting task, options:[M, S, MS]; M:multivariate predict multivariate, S:univariate predict univariate, MS:multivariate predict univariate
 args.target = 'close'  # target feature in S or MS task
 args.freq = 'b'  # freq for time features encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h
@@ -132,6 +132,9 @@ for ii in range(args.itr):
                                                                                                          args.des, ii)
 
     exp = Exp(args, k_fold=10)  # set experiments
+
+    train_data, train_loader = exp._get_data(flag='train', fold_number=1)
+
     if args.print_log:
         print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
     exp.train(setting)

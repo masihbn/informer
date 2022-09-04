@@ -242,8 +242,8 @@ class Exp_Informer(Exp_Basic):
 
         return self.model
 
-    def test(self, setting):
-        test_data, test_loader = self._get_data(flag='test')
+    def test(self, setting, flag='test'):
+        test_data, test_loader = self._get_data(flag=flag)
         
         self.model.eval()
         
@@ -277,8 +277,8 @@ class Exp_Informer(Exp_Basic):
 
         return mae, mse, rmse, mape, mspe
 
-    def predict(self, setting, load=False):
-        pred_data, pred_loader = self._get_data(flag='pred')
+    def predict(self, setting, load=False, flag='pred'):
+        pred_data, pred_loader = self._get_data(flag=flag)
         
         if load:
             path = os.path.join(self.args.checkpoints, setting)
@@ -286,25 +286,29 @@ class Exp_Informer(Exp_Basic):
             self.model.load_state_dict(torch.load(best_model_path))
 
         self.model.eval()
-        
+
         preds = []
-        
-        for i, (batch_x,batch_y,batch_x_mark,batch_y_mark) in enumerate(pred_loader):
+        trues = []
+
+        for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(pred_loader):
             pred, true = self._process_one_batch(
                 pred_data, batch_x, batch_y, batch_x_mark, batch_y_mark)
             preds.append(pred.detach().cpu().numpy())
+            trues.append(true.detach().cpu().numpy())
 
         preds = np.array(preds)
+        trues = np.array(trues)
         preds = preds.reshape(-1, preds.shape[-2], preds.shape[-1])
-        
+        trues = trues.reshape(-1, trues.shape[-2], trues.shape[-1])
+
         # result save
-        folder_path = './results/' + setting +'/'
+        folder_path = './results/' + setting + '/'
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
-        
-        np.save(folder_path+'real_prediction.npy', preds)
-        
-        return
+
+        np.save(folder_path + 'real_prediction.npy', preds)
+
+        return preds, trues
 
     def _process_one_batch(self, dataset_object, batch_x, batch_y, batch_x_mark, batch_y_mark):
         batch_x = batch_x.float().to(self.device)

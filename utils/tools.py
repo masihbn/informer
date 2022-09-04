@@ -84,8 +84,8 @@ def get_default_args():
     args = dotdict()
     args.model = 'informer'  # model of experiment, options: [informer, informerstack, informerlight(TBD)]
     args.data = 'custom'  # data
-    args.root_path = './informer'  # root path of data file
-    args.data_path = 'SP500.csv'  # data file
+    args.root_path = './'  # root path of data file
+    args.data_path = 'SP500 2019.csv'  # data file
     args.target = 'close'  # target feature in S or MS task
     args.checkpoints = './informer_checkpoints'  # location of model checkpoints
     args.base_decoder = 'default'  # Options are: LSTM, default
