@@ -47,7 +47,7 @@ def train_and_test_model(experiment, args):
 
         # torch.cuda.empty_cache()
 
-        return exp
+        return mse
 
 
 def objective(trial):
