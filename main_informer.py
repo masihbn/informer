@@ -6,17 +6,40 @@ from exp.exp_informer import Exp_Informer
 from informer.utils.tools import dotdict
 
 args = dotdict()
+file_name = 'SP500 2021.csv'
 
 args.model = 'informer'  # model of experiment, options: [informer, informerstack, informerlight(TBD)]
 args.print_log = True
 
+args = dotdict()
+args.model = 'informer'  # model of experiment, options: [informer, informerstack, informerlight(TBD)]
+args.base_decoder = 'default'  # Options are: LSTM, default, IE-SBiGRU
 args.data = 'custom'  # data
 args.root_path = './'  # root path of data file
-args.data_path = 'SP500 2021.csv'  # data file
-args.features = 'S'  # forecasting task, options:[M, S, MS]; M:multivariate predict multivariate, S:univariate predict univariate, MS:multivariate predict univariate
+args.data_path = file_name  # data file
 args.target = 'close'  # target feature in S or MS task
-args.freq = 'b'  # freq for time features encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h
 args.checkpoints = './informer_checkpoints'  # location of model checkpoints
+args.enc_in = 1  # encoder input size
+args.dec_in = 1  # decoder input size
+args.c_out = 1  # output size
+args.factor = 1  # probsparse attn factor
+args.dropout = 0.05  # dropout
+args.attn = 'prob'  # attention used in encoder, options:[prob, full]
+args.embed = 'timeF'  # time features encoding, options:[timeF, fixed, learned]
+args.activation = 'gelu'  # activation
+args.output_attention = False  # whether to output attention in ecoder
+args.mix = True
+args.padding = 0
+args.loss = 'mse'
+args.lradj = 'type1'
+args.use_amp = False  # whether to use automatic mixed precision training
+args.num_workers = 0
+args.itr = 1
+args.des = 'exp'
+args.use_gpu = True if torch.cuda.is_available() else False
+args.gpu = 0
+args.use_multi_gpu = False
+args.devices = '0,1,2,3'
 
 # args.data = 'custom' # data
 # args.root_path = './' # root path of data file
@@ -26,9 +49,9 @@ args.checkpoints = './informer_checkpoints'  # location of model checkpoints
 # args.freq = 'b' # freq for time features encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h
 # args.checkpoints = './informer_checkpoints' # location of model checkpoints
 
-args.seq_len = 40  # input sequence length of Informer encoder
-args.label_len = 20  # start token length of Informer decoder
-args.pred_len = 5  # prediction sequence length
+args.seq_len = 20  # input sequence length of Informer encoder
+args.label_len = 6  # start token length of Informer decoder
+args.pred_len = 2  # prediction sequence length
 # Informer decoder input: concat[start token series(label_len), zero padding series(pred_len)]
 
 args.base_decoder = 'default'
@@ -45,36 +68,24 @@ args.base_decoder = 'default'
 # args.BiGRU_num_layers = 5
 # args.BiGRU_seq_length = 40
 
-args.enc_in = 1  # encoder input size
-args.dec_in = 1  # decoder input size
-args.c_out = 1  # output size
-args.factor = 1  # probsparse attn factor
-args.d_model = 512  # dimension of model
-args.n_heads = 8  # num of heads
-args.e_layers = 1  # num of encoder layers
-args.d_layers = 1  # num of decoder layers
+args.features = 'S'  # forecasting task, options:[M, S, MS]; M:multivariate predict multivariate, S:univariate predict univariate, MS:multivariate predict univariate
+args.freq = 'b'  # freq for time features encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h
+
+args.d_model = 1024  # dimension of model
+args.n_heads = 4  # num of heads
+args.e_layers = 2  # num of encoder layers
+args.d_layers = 2  # num of decoder layers
 args.d_ff = 2048  # dimension of fcn in model
-args.dropout = 0.05  # dropout
-args.attn = 'prob'  # attention used in encoder, options:[prob, full]
-args.embed = 'timeF'  # time features encoding, options:[timeF, fixed, learned]
-args.activation = 'gelu'  # activation
-args.distil = True  # whether to use distilling in encoder
-args.output_attention = False  # whether to output attention in ecoder
-args.mix = True
-args.padding = 0
-args.freq = 'h'
+args.distil = False  # whether to use distilling in encoder
 
 args.batch_size = 32
 args.learning_rate = 0.0001
-args.loss = 'mse'
-args.lradj = 'type1'
-args.use_amp = False  # whether to use automatic mixed precision training
 
-args.num_workers = 0
-args.itr = 1
-args.train_epochs = 50
+args.train_epochs = 10
 args.patience = 3
-args.des = 'exp'
+
+args.print_log = True
+args.inverse = False
 
 args.use_gpu = True if torch.cuda.is_available() else False
 args.gpu = 0
@@ -100,7 +111,7 @@ if args.use_gpu and args.use_multi_gpu:
 #     'Solar': {'data': 'solar_AL.csv', 'T': 'POWER_136', 'M': [137, 137, 137], 'S': [1, 1, 1], 'MS': [137, 137, 1]},
 # }
 data_parser = {
-    'SP500':{'data':'SP500.csv','T':'close','M':[2,2,2],'S':[1,1,1],'MS':[2,2,1]},
+    'SP500': {'data': file_name, 'T': 'close', 'M': [2, 2, 2], 'S': [1, 1, 1], 'MS': [2, 2, 1]},
 }
 
 if args.data in data_parser.keys():
@@ -131,9 +142,9 @@ for ii in range(args.itr):
                                                                                                          args.mix,
                                                                                                          args.des, ii)
 
-    exp = Exp(args, k_fold=10)  # set experiments
+    exp = Exp(args)  # set experiments
 
-    train_data, train_loader = exp._get_data(flag='train', fold_number=1)
+    train_data, train_loader = exp._get_data(flag='train')
 
     if args.print_log:
         print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
