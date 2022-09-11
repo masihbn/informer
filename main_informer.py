@@ -6,7 +6,7 @@ from exp.exp_informer import Exp_Informer
 from informer.utils.tools import dotdict
 
 args = dotdict()
-file_name = 'SP500 2021.csv'
+file_name = 'Gold 2017.csv'
 
 args.model = 'informer'  # model of experiment, options: [informer, informerstack, informerlight(TBD)]
 args.print_log = True

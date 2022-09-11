@@ -125,6 +125,7 @@ class Exp_Informer(Exp_Basic):
                 k_fold=self.k_fold,
                 fold_number=fold_number
             )
+            self.Data = data_set
         data_loader = DataLoader(
             data_set,
             batch_size=batch_size,
