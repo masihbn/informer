@@ -232,7 +232,7 @@ class Exp_Informer(Exp_Basic):
 
             train_loss_results.append(train_loss)
             validation_loss_results.append(vali_loss)
-            test_loss_results.append(test_loss)
+            # test_loss_results.append(test_loss)
 
             if self.print_log:
                 print(f'Results for fold: {fold}: Train: {train_loss} Validation: {vali_loss} Test: {test_loss}')
