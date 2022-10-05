@@ -247,7 +247,8 @@ class Exp_Informer(Exp_Basic):
         if self.print_log:
             print(f'Average Loss -> Train: {average_train_loss} '
                   f'Validation: {average_validation_loss} '
-                  f'Test: {average_test_loss}')
+                 # f'Test: {average_test_loss}'
+                 )
 
         return self.model
 
