@@ -242,7 +242,7 @@ class Exp_Informer(Exp_Basic):
 
         average_train_loss = sum(train_loss_results) / len(train_loss_results)
         average_validation_loss = sum(validation_loss_results) / len(validation_loss_results)
-        average_test_loss = sum(test_loss_results) / len(test_loss_results)
+        # average_test_loss = sum(test_loss_results) / len(test_loss_results)
 
         if self.print_log:
             print(f'Average Loss -> Train: {average_train_loss} '
