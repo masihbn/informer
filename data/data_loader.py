@@ -186,10 +186,10 @@ class Dataset_ETT_minute(Dataset):
 
 
 class Dataset_Custom(Dataset):
-    def __init__(self, root_path, flag='train', size=None, 
+    def __init__(self, root_path, flag='train', size=None,
                  features='S', data_path='ETTh1.csv', 
                  target='OT', scale=True, inverse=False, timeenc=0, freq='h', cols=None,
-                 k_fold=None, fold_number=None):
+                 k_fold=None, fold_number=None, test_set_length=None):
         # size [seq_len, label_len, pred_len]
         # info
         if size == None:
@@ -216,6 +216,7 @@ class Dataset_Custom(Dataset):
         self.data_path = data_path
         self.k_fold = k_fold
         self.fold_number = fold_number
+        self.test_set_length = test_set_length
         self.__read_data__()
 
     def __read_data__(self):
@@ -241,9 +242,14 @@ class Dataset_Custom(Dataset):
         else:
             df_raw = df_initial_raw
 
-        num_train = int(len(df_raw)*0.7)
-        num_test = int(len(df_raw)*0.2)
-        num_vali = len(df_raw) - num_train - num_test
+        if self.test_set_length is not None:
+            num_test = self.test_set_length
+            num_vali = self.test_set_length
+            num_train = len(df_raw) - num_vali - num_test
+        else:
+            num_train = int(len(df_raw)*0.7)
+            num_test = int(len(df_raw)*0.2)
+            num_vali = len(df_raw) - num_train - num_test
         border1s = [0, num_train-self.seq_len, len(df_raw)-num_test-self.seq_len]
         border2s = [num_train, num_train+num_vali, len(df_raw)]
         border1 = border1s[self.set_type]

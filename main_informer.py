@@ -8,6 +8,8 @@ from informer.utils.tools import dotdict
 args = dotdict()
 file_name = 'Gold 2017.csv'
 
+args.test_set_length = 2  ############### Set to None if you want the default informer setting for this ###########
+
 args.model = 'informer'  # model of experiment, options: [informer, informerstack, informerlight(TBD)]
 args.print_log = True
 
@@ -70,6 +72,7 @@ args.base_decoder = 'default'
 
 args.features = 'S'  # forecasting task, options:[M, S, MS]; M:multivariate predict multivariate, S:univariate predict univariate, MS:multivariate predict univariate
 args.freq = 'b'  # freq for time features encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h
+args.detail_freq = 'b'
 
 args.d_model = 1024  # dimension of model
 args.n_heads = 4  # num of heads
@@ -78,7 +81,7 @@ args.d_layers = 2  # num of decoder layers
 args.d_ff = 2048  # dimension of fcn in model
 args.distil = False  # whether to use distilling in encoder
 
-args.batch_size = 32
+args.batch_size = 1  ############## Set according to args.test_set_length #############################
 args.learning_rate = 0.0001
 
 args.train_epochs = 10

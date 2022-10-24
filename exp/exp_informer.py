@@ -26,6 +26,7 @@ class Exp_Informer(Exp_Basic):
         super(Exp_Informer, self).__init__(args)
         self.k_fold = k_fold
         self.print_log = args.print_log
+        self.test_set_length = args.test_set_length
 
     def _build_model(self):
         model_dict = {
@@ -100,7 +101,7 @@ class Exp_Informer(Exp_Basic):
         if flag == 'pred':
             data_set = Data(
                 root_path=args.root_path,
-                data_path=args.data_path,
+                data_path=args.pred_data_path,
                 flag=flag,
                 size=[args.seq_len, args.label_len, args.pred_len],
                 features=args.features,
@@ -123,7 +124,8 @@ class Exp_Informer(Exp_Basic):
                 freq=freq,
                 cols=args.cols,
                 k_fold=self.k_fold,
-                fold_number=fold_number
+                fold_number=fold_number,
+                test_set_length=self.test_set_length
             )
             self.Data = data_set
         data_loader = DataLoader(
